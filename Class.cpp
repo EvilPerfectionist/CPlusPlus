@@ -2,7 +2,16 @@
 #include <iostream>
 
 using namespace std;
+class Triangle
+{
+public:
+    int each;
+    Triangle( int l)
+    {
+        each = l;
+    }
 
+};
 class Rectangle
 {
 public:
@@ -57,6 +66,9 @@ int Rectangle::a = 8;
 
 int main()
 {
+    Triangle tri(3);
+    cout << "Length : " << tri.each << endl;
+
     Rectangle rt;
     rt.setLength(7);
     rt.setBreadth(4);
