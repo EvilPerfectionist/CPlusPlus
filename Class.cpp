@@ -2,6 +2,44 @@
 #include <iostream>
 
 using namespace std;
+
+// Initializer List
+class Foo
+{
+public:
+    Foo( int x )
+    {
+        std::cout << "Foo's constructor "
+                  << "called with "
+                  << x
+                  << std::endl;
+    }
+};
+
+class Bar : public Foo
+{
+public:
+    Bar() : Foo( 10 )  // construct the Foo part of Bar
+    {
+        std::cout << "Bar's constructor" << std::endl;
+    }
+};
+
+class Quux
+{
+public:
+    Quux() : _my_int( 5 )  // sets _my_int to 5
+    { }
+    int Test(int t);
+private:
+    int _my_int;
+};
+int Quux::Test(int t)
+{
+    _my_int = t;
+    return _my_int;
+}
+
 class Triangle
 {
 public:
@@ -66,6 +104,10 @@ int Rectangle::a = 8;
 
 int main()
 {
+    Bar bar;
+    Quux quux;
+    cout << "Quux : " << quux.Test(5) << endl;
+
     Triangle tri(3);
     cout << "Length : " << tri.each << endl;
 
