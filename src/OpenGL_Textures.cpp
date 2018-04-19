@@ -26,7 +26,7 @@ const GLchar* fragmentSource = R"glsl(
     void main()
     {
         //outColor = vec4(triangleColor, 1.0);
-        outColor = vec4(Color, 1.0)
+        outColor = vec4(Color, 1.0);
     }
 )glsl";
 
@@ -77,7 +77,6 @@ int main()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  sizeof(elements), elements, GL_STATIC_DRAW);
 
-
     // Create and compile the vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexSource, NULL);
@@ -99,14 +98,14 @@ int main()
     // Specify the layout of the vertex data
     GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
     glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
     //GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
     //glUniform3f(uniColor, 1.0f, 0.0f, 0.0f);
 
     GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
     glEnableVertexAttribArray(colAttrib);
     glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
-                          5 * sizeof(float), (void*)(2 * sizeof(float)));
+                          5*sizeof(float), (void*)(2*sizeof(float)));
 
     //auto t_start = std::chrono::high_resolution_clock::now();
 
@@ -128,7 +127,6 @@ int main()
             }
         }
 
-
         //auto t_now = std::chrono::high_resolution_clock::now();
         //float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
         //glUniform3f(uniColor, (sin(time * 4.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
@@ -144,7 +142,7 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteBuffers(1, &ebo);
     glDeleteBuffers(1, &vbo);
-    //glDeleteTextures(1, &tex);
+
     glDeleteVertexArrays(1, &vao);
 
     window.close();
