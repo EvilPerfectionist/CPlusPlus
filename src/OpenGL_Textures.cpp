@@ -9,12 +9,15 @@ const GLchar* vertexSource = R"glsl(
     #version 450 core
     in vec2 position;
     in vec3 color;
+    in vec2 texcoord;
 
     out vec3 Color;
+    out vec2 Texcoord;
 
     void main()
     {
         Color = color;
+        Texcoord = texcoord;
         gl_Position = vec4(position, 0.0, 1.0);
     }
 )glsl";
@@ -22,11 +25,14 @@ const GLchar* fragmentSource = R"glsl(
     #version 450 core
     //uniform vec3 triangleColor;
     in vec3 Color;
+    in vec2 Texcoord;
     out vec4 outColor;
+    uniform sampler2D tex;
     void main()
     {
         //outColor = vec4(triangleColor, 1.0);
-        outColor = vec4(Color, 1.0);
+        //outColor = vec4(Color, 1.0);
+        outColor = texture(tex, Texcoord) * vec4(Color, 1.0);
     }
 )glsl";
 
@@ -55,11 +61,12 @@ int main()
     GLuint vbo;
     glGenBuffers(1, &vbo);
 
-    float vertices[] = {
-            -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // Top-left (X, Y, 1, 0, 0) Red
-            0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // Top-right (X, Y, 0, 1, 0)Green
-            0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // Bottom-right (X, Y, 0, 0, 1)Blue
-            -0.5f, -0.5f, 1.0f, 1.0f, 1.0f  // Bottom-left (X, Y, 1, 1, 1)White
+    GLfloat vertices[] = {
+            //  Position      Color        Texcoords
+            -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
+            0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, // Top-right
+            0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 2.0f, 2.0f, // Bottom-right
+            -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 2.0f  // Bottom-left
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -76,6 +83,35 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  sizeof(elements), elements, GL_STATIC_DRAW);
+
+    // Load texture
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    // Black/white checkerboard
+    //float pixels[] = {
+    //        0.0f, 0.0f, 0.0f,   1.0f, 1.0f, 1.0f,
+    //        1.0f, 1.0f, 1.0f,   0.0f, 0.0f, 0.0f
+    //};
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_FLOAT, pixels);
+
+    int width, height;
+    unsigned char* image = SOIL_load_image("/home/leon/Instrument_Pose_Estimation/Test_C/sample.png", &width, &height, 0, SOIL_LOAD_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    //float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+    //glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     // Create and compile the vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -98,14 +134,19 @@ int main()
     // Specify the layout of the vertex data
     GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
     glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), 0);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
     //GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
     //glUniform3f(uniColor, 1.0f, 0.0f, 0.0f);
 
     GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
     glEnableVertexAttribArray(colAttrib);
     glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
-                          5*sizeof(float), (void*)(2*sizeof(float)));
+                          7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
+
+    GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+    glEnableVertexAttribArray(texAttrib);
+    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
+                          7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 
     //auto t_start = std::chrono::high_resolution_clock::now();
 
@@ -127,6 +168,10 @@ int main()
             }
         }
 
+        // Clear the screen to black
+        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        //glClear(GL_COLOR_BUFFER_BIT);
+
         //auto t_now = std::chrono::high_resolution_clock::now();
         //float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
         //glUniform3f(uniColor, (sin(time * 4.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
@@ -142,7 +187,7 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteBuffers(1, &ebo);
     glDeleteBuffers(1, &vbo);
-
+    glDeleteTextures(1, &tex);
     glDeleteVertexArrays(1, &vao);
 
     window.close();
