@@ -130,6 +130,21 @@ void createShaderProgram(const GLchar* vertSrc, const GLchar* fragSrc, GLuint& v
     glLinkProgram(shaderProgram);
 }
 
+void specifyVertexAttributes(GLuint shaderProgram)
+{
+    GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 0);
+
+    GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+    glEnableVertexAttribArray(colAttrib);
+    glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+
+    GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+    glEnableVertexAttribArray(texAttrib);
+    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+}
+
 // Create a texture from an image file
 GLuint loadTexture(const GLchar* path)
 {
@@ -197,22 +212,7 @@ int main()
     createShaderProgram(vertexSource, fragmentSource, vertexShader, fragmentShader, shaderProgram);
     glUseProgram(shaderProgram);
 
-    // Specify the layout of the vertex data
-    GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-    glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 0);
-    //GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
-    //glUniform3f(uniColor, 1.0f, 0.0f, 0.0f);
-
-    GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
-    glEnableVertexAttribArray(colAttrib);
-    glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
-                          8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-
-    GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
-    glEnableVertexAttribArray(texAttrib);
-    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
-                          8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+    specifyVertexAttributes(shaderProgram);
 
     glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);
     glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
