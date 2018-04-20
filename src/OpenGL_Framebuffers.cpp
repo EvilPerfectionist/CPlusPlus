@@ -1,5 +1,7 @@
+// Link statically with GLEW
 #define GLEW_STATIC
 
+// Headers
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -39,6 +41,7 @@ const GLchar* sceneFragmentSource = R"glsl(
         outColor = vec4(Color, 1.0) * mix(texture(texKitten, Texcoord), texture(texPuppy, Texcoord), 0.5);
     }
 )glsl";
+
 const GLchar* screenVertexSource = R"glsl(
     #version 450 core
     in vec2 position;
@@ -55,20 +58,27 @@ const GLchar* screenFragmentSource = R"glsl(
     in vec2 Texcoord;
     out vec4 outColor;
     uniform sampler2D texFramebuffer;
+    uniform vec2 texOffset;
+    const float kernel[9] = float[](
+        0.00481007202f,
+        0.0286864862f,
+        0.102712765f,
+        0.220796734f,
+        0.284958780f,
+        0.220796734f,
+        0.102712765f,
+        0.0286864862f,
+        0.00481007202f
+    );
     void main()
     {
-        vec4 top         = texture(texFramebuffer, vec2(Texcoord.x, Texcoord.y + 1.0 / 200.0));
-        vec4 bottom      = texture(texFramebuffer, vec2(Texcoord.x, Texcoord.y - 1.0 / 200.0));
-        vec4 left        = texture(texFramebuffer, vec2(Texcoord.x - 1.0 / 300.0, Texcoord.y));
-        vec4 right       = texture(texFramebuffer, vec2(Texcoord.x + 1.0 / 300.0, Texcoord.y));
-        vec4 topLeft     = texture(texFramebuffer, vec2(Texcoord.x - 1.0 / 300.0, Texcoord.y + 1.0 / 200.0));
-        vec4 topRight    = texture(texFramebuffer, vec2(Texcoord.x + 1.0 / 300.0, Texcoord.y + 1.0 / 200.0));
-        vec4 bottomLeft  = texture(texFramebuffer, vec2(Texcoord.x - 1.0 / 300.0, Texcoord.y - 1.0 / 200.0));
-        vec4 bottomRight = texture(texFramebuffer, vec2(Texcoord.x + 1.0 / 300.0, Texcoord.y - 1.0 / 200.0));
-        vec4 sx = -topLeft - 2 * left - bottomLeft + topRight   + 2 * right  + bottomRight;
-        vec4 sy = -topLeft - 2 * top  - topRight   + bottomLeft + 2 * bottom + bottomRight;
-        vec4 sobel = sqrt(sx * sx + sy * sy);
-        outColor = sobel;
+        vec4 sum = vec4(0.0);
+        for (int i = -4; i <= 4; i++)
+            sum += texture(
+                texFramebuffer,
+                Texcoord + i * texOffset
+            ) * kernel[i + 4];
+        outColor = sum;
     }
 )glsl";
 
@@ -135,6 +145,28 @@ GLfloat quadVertices[] = {
         -1.0f,  1.0f,  0.0f, 1.0f
 };
 
+// Create a texture from an image file
+GLuint loadTexture(const GLchar* path)
+{
+    GLuint texture;
+    glGenTextures(1, &texture);
+
+    int width, height;
+    unsigned char* image;
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+    image = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return texture;
+}
+
 void createShaderProgram(const GLchar* vertSrc, const GLchar* fragSrc, GLuint& vertexShader, GLuint& fragmentShader, GLuint& shaderProgram)
 {
     // Create and compile the vertex shader
@@ -181,29 +213,6 @@ void specifyScreenVertexAttributes(GLuint shaderProgram)
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 }
 
-// Create a texture from an image file
-GLuint loadTexture(const GLchar* path)
-{
-    GLuint texture;
-    glGenTextures(1, &texture);
-
-    int width, height;
-    unsigned char* image;
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    image = SOIL_load_image(path, &width, &height, 0, SOIL_LOAD_RGB);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-    SOIL_free_image_data(image);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    return texture;
-}
-
-
 int main()
 {
     auto t_start = std::chrono::high_resolution_clock::now();
@@ -211,18 +220,14 @@ int main()
     sf::ContextSettings settings;
     settings.depthBits = 24;
     settings.stencilBits = 8;
-    settings.antialiasingLevel = 2; // Optional
-    // Request OpenGL version 3.2 (optional but recommended)
-    settings.majorVersion = 3;
-    settings.minorVersion = 2;
 
-    sf::Window window(sf::VideoMode(800, 600), "OpenGL", sf::Style::Close, settings);
+    sf::Window window(sf::VideoMode(800, 600, 32), "OpenGL", sf::Style::Titlebar | sf::Style::Close, settings);
 
     // Initialize GLEW
     glewExperimental = GL_TRUE;
     glewInit();
 
-    // Create Vertex Array Object
+    // Create VAOs
     GLuint vaoCube, vaoQuad;
     glGenVertexArrays(1, &vaoCube);
     glGenVertexArrays(1, &vaoQuad);
@@ -257,10 +262,6 @@ int main()
     // Load textures
     GLuint texKitten = loadTexture("/home/leon/Instrument_Pose_Estimation/Test_C/images/sample.png");
     GLuint texPuppy = loadTexture("/home/leon/Instrument_Pose_Estimation/Test_C/images/sample2.png");
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texKitten);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texPuppy);
 
     glUseProgram(sceneShaderProgram);
     glUniform1i(glGetUniformLocation(sceneShaderProgram, "texKitten"), 0);
@@ -268,33 +269,48 @@ int main()
 
     glUseProgram(screenShaderProgram);
     glUniform1i(glGetUniformLocation(screenShaderProgram, "texFramebuffer"), 0);
+    GLint uniTexOffset = glGetUniformLocation(screenShaderProgram, "texOffset");
 
     GLint uniModel = glGetUniformLocation(sceneShaderProgram, "model");
 
-    // Create framebuffer
-    GLuint frameBuffer;
-    glGenFramebuffers(1, &frameBuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+    // Create two framebuffers
+    GLuint frameBuffers[2];
+    glGenFramebuffers(2, frameBuffers);
 
-    // Create texture to hold color buffer
-    GLuint texColorBuffer;
-    glGenTextures(1, &texColorBuffer);
-    glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+    // Create two textures to hold color buffers
+    GLuint texColorBuffers[2];
+    glGenTextures(2, texColorBuffers);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
+    glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
+
+    // Set up the second framebuffer's color buffer
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[1], 0);
+
+    // Set up the first framebuffer's color buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
+    glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffers[0], 0);
 
-    // Create Renderbuffer Object to hold depth and stencil buffers
+    // Create first framebuffer's Renderbuffer Object to hold depth and stencil buffers
     GLuint rboDepthStencil;
     glGenRenderbuffers(1, &rboDepthStencil);
     glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil);
 
+    // Set up projection
     glm::mat4 view = glm::lookAt(
             glm::vec3(2.5f, 2.5f, 2.0f),
             glm::vec3(0.0f, 0.0f, 0.0f),
@@ -302,7 +318,6 @@ int main()
     );
 
     glUseProgram(sceneShaderProgram);
-    //glUseProgram(screenShaderProgram);
 
     GLint uniView = glGetUniformLocation(sceneShaderProgram, "view");
     glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
@@ -324,15 +339,11 @@ int main()
                 case sf::Event::Closed:
                     running = false;
                     break;
-                case sf::Event::KeyPressed:
-                    if (windowEvent.key.code == sf::Keyboard::Escape)
-                        running = false;
-                    break;
             }
         }
 
-        // Bind our framebuffer and draw 3D scene (spinning cube)
-        glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+        // Bind first framebuffer and draw 3D scene (spinning cube)
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[0]);
         glBindVertexArray(vaoCube);
         glEnable(GL_DEPTH_TEST);
         glUseProgram(sceneShaderProgram);
@@ -342,10 +353,11 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texPuppy);
 
-        // Clear the screen to black
+        // Clear the screen to white
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Calculate transformation
         auto t_now = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
 
@@ -355,7 +367,6 @@ int main()
                 time * glm::radians(180.0f),
                 glm::vec3(0.0f, 0.0f, 1.0f)
         );
-
         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
 
         // Draw cube
@@ -364,23 +375,20 @@ int main()
         glEnable(GL_STENCIL_TEST);
 
         // Draw floor
-        glStencilFunc(GL_ALWAYS, 7, 0xFF); // Set any stencil to 1
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilMask(0xFF); // Write to stencil buffer
-        glDepthMask(GL_FALSE); // Don't write to depth buffer
-        glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
+        glStencilMask(0xFF);
+        glDepthMask(GL_FALSE);
+        glClear(GL_STENCIL_BUFFER_BIT);
 
         glDrawArrays(GL_TRIANGLES, 36, 6);
 
         // Draw cube reflection
-        glStencilFunc(GL_EQUAL, 7, 0xFF); // Pass test if stencil value is 1
-        glStencilMask(0x00); // Don't write anything to stencil buffer
-        glDepthMask(GL_TRUE); // Write to depth buffer
+        glStencilFunc(GL_EQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDepthMask(GL_TRUE);
 
-        model = glm::scale(
-                glm::translate(model, glm::vec3(0, 0, -1)),
-                glm::vec3(1, 1, -1)
-        );
+        model = glm::scale(glm::translate(model, glm::vec3(0, 0, -1)), glm::vec3(1, 1, -1));
         glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
 
         glUniform3f(uniColor, 0.3f, 0.3f, 0.3f);
@@ -389,23 +397,32 @@ int main()
 
         glDisable(GL_STENCIL_TEST);
 
-        // Bind default framebuffer and draw contents of our framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // Bind second framebuffer and draw contents of first framebuffer, blurring horizontally
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBuffers[1]);
         glBindVertexArray(vaoQuad);
         glDisable(GL_DEPTH_TEST);
         glUseProgram(screenShaderProgram);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffers[0]);
+        glUniform2f(uniTexOffset, 1.0f / 300.0f, 0.0f);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        // Bind default framebuffer and draw contents of second framebuffer, blurring vertically
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffers[1]);
+        glUniform2f(uniTexOffset, 0.0f, 1.0f / 200.0f);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Swap buffers
         window.display();
     }
+
     glDeleteRenderbuffers(1, &rboDepthStencil);
-    glDeleteTextures(1, &texColorBuffer);
-    glDeleteFramebuffers(1, &frameBuffer);
+    glDeleteTextures(2, texColorBuffers);
+    glDeleteFramebuffers(2, frameBuffers);
 
     glDeleteTextures(1, &texKitten);
     glDeleteTextures(1, &texPuppy);
@@ -425,5 +442,6 @@ int main()
     glDeleteVertexArrays(1, &vaoQuad);
 
     window.close();
+
     return 0;
 }
