@@ -57,6 +57,7 @@ public:
     int breadth;        //breadth of rectangle
     int height;
     int width;
+    enum InputType { INVALID, CAMERA, VIDEO_FILE, IMAGE_LIST };
 
     static int a;
 
@@ -84,6 +85,9 @@ public:
         c.breadth = a.breadth + b.breadth;
         return c;
     }
+
+public:
+    InputType inputType;
 };
 
 /* defining member functions */
@@ -127,6 +131,7 @@ int main()
     rt2.setBreadth(6);
     Rectangle rt3 = Rectangle::BigRectangle(rt, rt2);
     cout << rt3.getArea() << endl;
+    cout << Rectangle::IMAGE_LIST << endl;
     return 0;
 }
 
