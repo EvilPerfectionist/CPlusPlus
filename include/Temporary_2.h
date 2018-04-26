@@ -24,7 +24,7 @@
 #define MAGICKCORE_EXCLUDE_DEPRECATED
 #include <Magick++.h>
 
-#define INVALID_OGL_VALUE 0xff
+#define INVALID_OGL_VALUE 0xffffffff
 #define SAFE_DELETE(p) if (p) { delete p; p = NULL; }
 
 using namespace Eigen;
@@ -41,6 +41,8 @@ public:
     Texture(GLenum TextureTarget, const std::string &FileName);
 
     bool Load();
+
+    void Bind(GLenum TextureUnit);
 
 private:
     std::string m_fileName;
@@ -60,6 +62,8 @@ public:
 
     bool LoadMesh(const std::string &Filename, VectorXf &pose);
 
+    void Render();
+
     string name = "default name";
 
     Matrix4f ModelMatrix;
@@ -75,7 +79,7 @@ private:
 
     void Clear();
 
-#define INVALID_MATERIAL 0xFF
+#define INVALID_MATERIAL 0xFFFFFFFF
 
     struct MeshEntry {
 

@@ -14,6 +14,14 @@ class Model{
 public:
     Model(const char* rootDirectory, const char* modelFile, bool withPoseEstimation = true);
 
+    ~Model();
+
+    void render(VectorXd &pose, Mat &img, bool clear, string program = "color");
+
+    void render(Mat &img, bool clear, string program = "color");
+
+    void updateViewMatrix(sf::Window &window);
+
     Renderer *renderer;
 private:
     vector<Mesh*> meshes;

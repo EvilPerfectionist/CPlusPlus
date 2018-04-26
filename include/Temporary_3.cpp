@@ -151,3 +151,30 @@ GLint Renderer::createRenderProgram(GLuint &vertex_shader, GLuint &fragment_shad
 
     return Result;
 }
+
+void Renderer::renderColor(Mesh *mesh, string programName) {
+    Eigen::Matrix4f MVP = ProjectionMatrix * ViewMatrix * mesh->ModelMatrix;
+
+    // background color
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+    glUseProgram(program[programName]);
+    glUniformMatrix4fv(ViewMatrixID[programName], 1, GL_FALSE, &ViewMatrix(0, 0));
+    glUniformMatrix4fv(MatrixID[programName], 1, GL_FALSE, &MVP(0, 0));
+    glUniformMatrix4fv(ModelMatrixID[programName], 1, GL_FALSE, &mesh->ModelMatrix(0, 0));
+    static float x = 0;
+//    Vector3f lightPosition;
+//    lightPosition = ViewMatrix.topRightCorner(3,1);
+//    glUniform3fv(LightPositionID[programName], 1, &lightPosition(0));
+
+    mesh->Render();
+}
+
+void Renderer::getImage(Mat &img){
+    // get the image from opengl buffer
+    GLubyte data[4 * WIDTH * HEIGHT]; // it should be 3 because of BGR, but using 3 results in strange border...
+    glReadPixels(0, 0, WIDTH, HEIGHT, GL_BGR, GL_UNSIGNED_BYTE, data);
+    Mat tmp = cv::Mat(HEIGHT, WIDTH, CV_8UC3, data);
+    flip(tmp, tmp, 0);
+    tmp.copyTo(img);
+}

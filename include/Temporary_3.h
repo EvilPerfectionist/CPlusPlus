@@ -29,6 +29,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <Temporary_2.h>
+
 // Converts degrees to radians.
 #define degreesToRadians(angleDegrees) (angleDegrees * (float)M_PI / 180.0f)
 // Converts radians to degrees.
@@ -46,6 +48,10 @@ public:
     Renderer(const char *rootDirectory);
 
     ~Renderer();
+
+    void renderColor(Mesh *mesh, string program = "color");
+
+    void getImage(Mat &img);
 
     Matrix3f K, Kinv; // intrinsics matrix
 
