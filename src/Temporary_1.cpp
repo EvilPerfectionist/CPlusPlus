@@ -1,86 +1,56 @@
-#include <filesystem.hpp>
 #include <iostream>
-#include <string>
-#include <sdf/sdf.hh>
-
+#include <Temporary_4.h>
 using namespace std;
-
-void Model(string const &path)
-{
-    std::cout << "Path = " << path << "\n";
-}
 
 int main()
 {
-    FileSystem *filesystem = new FileSystem("/home/leon/Instrument_Pose_Estimation/Test_C/");
-    path fullFilePath;
-    filesystem->find("model.sdf", &fullFilePath);
-    std::cout << fullFilePath << "\n";
-    std::cout << "FullFilePath = " << fullFilePath << "\n";
-    string path_final = fullFilePath.c_str();
-    Model(path_final);
+    sf::ContextSettings settings;
+    settings.depthBits = 24;
+    settings.stencilBits = 8;
 
-    char *rootDirectory = "/home/leon/Instrument_Pose_Estimation/Test_C/";
-    if (filesystem->find("model.sdf", &fullFilePath)) {
-        if (strcmp(fullFilePath.extension().c_str(), ".sdf") == 0) {
-            std::cout << "success " << endl;
+    sf::Window window(sf::VideoMode(WIDTH, HEIGHT, 24), "Transform Feedback", sf::Style::Titlebar | sf::Style::Close, settings);
 
-            std::ifstream stream(fullFilePath.c_str());
-            std::string str((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-            sdf::SDF sdf;
-            sdf.SetFromString(str);
+    // Initialize GLEW
+    glewExperimental = GL_TRUE;
+    glewInit();
 
-            if (sdf.Root()->HasElement("model")) {
-                printf("contain a model\n");
-                sdf::ElementPtr modelElem = sdf.Root()->GetElement("model");
-                // Read name attribute value
-                if (modelElem->HasAttribute("name")) {
-                    sdf::ParamPtr nameParam = modelElem->GetAttribute("name");
-                    cout << "loading " << nameParam->GetAsString() << endl;
-                    sdf::ElementPtr linkElem = modelElem->GetElement("link");
-                    while (linkElem != NULL) {
-                        if (linkElem->HasElement("visual")) {
-                            sdf::ElementPtr uriElem = linkElem->GetElement("visual")->GetElement(
-                                    "geometry")->GetElement(
-                                    "mesh")->GetElement("uri");
-                            sdf::ElementPtr poseElem = linkElem->GetElement("pose");
-                            if (poseElem != NULL && uriElem != NULL &&
-                                strcmp(uriElem->GetValue()->GetAsString().c_str(), "__default__") != 0) {
-                                char file[200];
-                                sprintf(file, "%s", uriElem->GetValue()->GetAsString().c_str() + 8);
-                                std::cout << "File = " << file << "\n";
-                                float x, y, z, roll, pitch, yaw;
-                                printf("x = %f, y = %f, z = %f\n", x, y, z);
-                                if (sscanf(poseElem->GetValue()->GetAsString().c_str(), "%f %f %f %f %f %f", &x, &y, &z,
-                                           &roll,
-                                           &pitch, &yaw) != 6)
-                                    printf("error reading pose parameters\n");
-                                else {
-                                    char modelPath[200];
-                                    sprintf(modelPath, "%smodels/%s", rootDirectory, file);
-                                    std::cout << "ModelPath = " << modelPath << "\n";
-                                    path p(modelPath);
-                                    if(exists(p) && is_regular_file(p)) {
+    Model model("/home/leon/Instrument_Pose_Estimation/Test_C", "model.sdf");// Iron_Man_mark_6.dae  model_simplified.sdf
 
-                                    }else{
-                                        printf("error loading modelfile %s\n", modelPath);
-                                    }
-                                }
-                                printf("Pose_Numbers\n");
-                            }
-                            printf("Visual_Numbers\n");
-                        }
-                        linkElem = linkElem->GetNextElement();
-                        printf("Link_Numbers\n");
-                    }
-                }
-            }
-            else{
-                printf("does not contain a model\n");
+    // run the main loop
+    bool running = true;
+    VectorXd pose_estimator(6);
+    pose_estimator << 0,0,-1,0,0,0;
+
+    char k;
+
+    while (running && k!=32)
+    {
+        // handle events
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            switch (event.type)
+            {
+                case sf::Event::Closed:
+                    running = false;
+                    break;
+                case sf::Event::KeyPressed:
+                    if (event.key.code == sf::Keyboard::Escape)
+                        running = false;
+                    break;
+                case sf::Event::Resized:
+                    glViewport(0, 0, event.size.width, event.size.height);
+                    break;
             }
         }
-    }
-    else {
-        std::cout << "could not find model file: " << endl;
+
+        VectorXd pose(6),grad(6);
+        pose << 0,0,-1,degreesToRadians(0),degreesToRadians(0),degreesToRadians(0);
+        Mat img_camera;
+
+        cout << "press ENTER to run tracking, press SPACE to toggle first person view (use WASD-keys to move around)" << endl;
+        while(!sf::Keyboard::isKeyPressed(sf::Keyboard::Return)) {
+
+        }
     }
 }
