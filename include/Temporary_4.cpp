@@ -77,6 +77,12 @@ Model::Model(const char* rootDirectory, const char* modelFile, bool withPoseEsti
             mesh->LoadMesh(fullFilePath.c_str());
             meshes.push_back(mesh);
         }
+        else if(strcmp(fullFilePath.extension().c_str(), ".obj") == 0) {
+            Mesh *mesh = new Mesh;
+            mesh->name = fullFilePath.stem().string();
+            mesh->LoadMesh(fullFilePath.c_str());
+            meshes.push_back(mesh);
+        }
         else{
             cout << "unknown model format, please provide either sdf or dae file" << endl;
         }

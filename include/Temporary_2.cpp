@@ -72,7 +72,8 @@ bool Mesh::InitFromScene(const aiScene* pScene, const std::string& Filename)
 void Mesh::InitMesh(unsigned int Index, const aiMesh* paiMesh)
 {
     m_Entries[Index].MaterialIndex = paiMesh->mMaterialIndex;
-
+    cout << "MaterialIndex Numbers :" << paiMesh->mMaterialIndex << endl;
+    cout << "Index Numbers :" << Index << endl;
     std::vector<unsigned int> Indices;
 
     const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
@@ -159,7 +160,7 @@ bool Mesh::InitMaterials(const aiScene* pScene, const std::string& Filename)
     }
 
     bool Ret = true;
-
+    cout << "Material Numbers :" << pScene->mNumMaterials << endl;
     // Initialize the materials
     for (unsigned int i = 0 ; i < pScene->mNumMaterials ; i++) {
         const aiMaterial* pMaterial = pScene->mMaterials[i];
@@ -169,7 +170,7 @@ bool Mesh::InitMaterials(const aiScene* pScene, const std::string& Filename)
         if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
             aiString Path;
 
-            if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
+            if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path) == AI_SUCCESS) {
                 std::string FullPath = Dir + "/" + Path.data;
                 m_Textures[i] = new Texture(GL_TEXTURE_2D, FullPath.c_str());
 

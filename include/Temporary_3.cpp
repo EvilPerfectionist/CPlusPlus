@@ -156,7 +156,7 @@ void Renderer::renderColor(Mesh *mesh, string programName) {
     Eigen::Matrix4f MVP = ProjectionMatrix * ViewMatrix * mesh->ModelMatrix;
 
     // background color
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
     glUseProgram(program[programName]);
     glUniformMatrix4fv(ViewMatrixID[programName], 1, GL_FALSE, &ViewMatrix(0, 0));
