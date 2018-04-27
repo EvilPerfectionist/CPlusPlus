@@ -14,7 +14,7 @@ int main()
     glewExperimental = GL_TRUE;
     glewInit();
 
-    Model model("/home/leon/Instrument_Pose_Estimation/Test_C", "Iron_Man_mark_6.dae");// Iron_Man_mark_6.dae  model_simplified.sdf
+    Model model("/home/leon/Instrument_Pose_Estimation/Test_C", "nanosuit.obj");// Iron_Man_mark_6.dae  model_simplified.sdf
 
     //Model room("/home/leon/Instrument_Pose_Estimation/Test_C","room.dae", false);
 
@@ -53,7 +53,7 @@ int main()
         cout << "press ENTER to run tracking, press SPACE to toggle first person view (use WASD-keys to move around)" << endl;
         while(!sf::Keyboard::isKeyPressed(sf::Keyboard::Return)) {
             model.updateViewMatrix(window);
-            model.render(img_camera, false, "color_simple");
+            model.render(img_camera, true, "color_simple");
             window.display();
         }
 
