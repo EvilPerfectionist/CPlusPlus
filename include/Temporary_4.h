@@ -2,7 +2,6 @@
 #define TEST_C_TEMPORARY_4_H
 
 #include <iostream>
-#include <Temporary_1.h>
 #include <Temporary_3.h>
 #include <filesystem.hpp>
 #include <sdf/sdf.hh>
@@ -20,10 +19,14 @@ public:
 
     void render(Mat &img, bool clear, string program = "color");
 
+    void Draw(bool clear, string program);
+
     void updateViewMatrix(sf::Window &window);
 
     Renderer *renderer;
+
 private:
+    vector<Model_OBJ*> model_objs;
     vector<Mesh*> meshes;
     FileSystem *filesystem;
 };

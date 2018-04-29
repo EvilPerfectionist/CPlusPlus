@@ -28,8 +28,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
-
 #include <Temporary_2.h>
+
+#include <Temporary_7.h>
 
 // Converts degrees to radians.
 #define degreesToRadians(angleDegrees) (angleDegrees * (float)M_PI / 180.0f)
@@ -51,6 +52,8 @@ public:
 
     void renderColor(Mesh *mesh, string program = "color");
 
+    void renderColor_OBJ(Model_OBJ *obj, string programName);
+
     void getImage(Mat &img);
 
     Matrix3f K, Kinv; // intrinsics matrix
@@ -69,6 +72,8 @@ private:
     map<string, GLuint> tbo;
 
     map<string, GLint> ViewMatrixID, MatrixID, ModelMatrixID, LightPositionID;
+
+    map<string, GLint> model_ID, view_ID, projection_ID;
 };
 
 #endif //TEST_C_TEMPORARY_3_H

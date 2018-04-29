@@ -20,9 +20,19 @@ Renderer::Renderer(const char *rootDirectory) {
     loadShaderCodeFromFile(file, src);
     compileShader(src, GL_FRAGMENT_SHADER, shader["color_fragment_simple"]);
 
+    sprintf(file, "%s/shader/Model_Loading.vs", rootDirectory);
+    loadShaderCodeFromFile(file, src);
+    compileShader(src, GL_VERTEX_SHADER, shader["Model_Loading_vertex"]);
+
+    sprintf(file, "%s/shader/Model_Loading.fs", rootDirectory);
+    loadShaderCodeFromFile(file, src);
+    compileShader(src, GL_FRAGMENT_SHADER, shader["Model_Loading_fragment"]);
+
     if (createRenderProgram(shader["color_vertex"], shader["color_fragment"], program["color"]) == GL_FALSE)
         return;
     if (createRenderProgram(shader["color_vertex_simple"], shader["color_fragment_simple"], program["color_simple"]) == GL_FALSE)
+        return;
+    if (createRenderProgram(shader["Model_Loading_vertex"], shader["Model_Loading_fragment"], program["Model_Loading"]) == GL_FALSE)
         return;
 
     MatrixID["color"] = glGetUniformLocation(program["color"], "MVP");
@@ -34,6 +44,10 @@ Renderer::Renderer(const char *rootDirectory) {
     ViewMatrixID["color_simple"] = glGetUniformLocation(program["color_simple"], "ViewMatrix");
     ModelMatrixID["color_simple"] = glGetUniformLocation(program["color_simple"], "ModelMatrix");
     LightPositionID["color_simple"] = glGetUniformLocation(program["color_simple"], "LightPosition_worldspace");
+
+    model_ID["Model_Loading"] = glGetUniformLocation(program["Model_Loading"], "model");
+    view_ID["Model_Loading"] = glGetUniformLocation(program["Model_Loading"], "view");
+    projection_ID["Model_Loading"] = glGetUniformLocation(program["Model_Loading"], "projection");
 
     Mat cameraMatrix, distCoeffs;
     sprintf(file, "%s/intrinsics.xml", rootDirectory);
@@ -168,6 +182,30 @@ void Renderer::renderColor(Mesh *mesh, string programName) {
 //    glUniform3fv(LightPositionID[programName], 1, &lightPosition(0));
 
     mesh->Render();
+}
+
+void Renderer::renderColor_OBJ(Model_OBJ *obj, string programName) {
+    GLuint ID = program[programName];
+
+    // background color
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glUseProgram(program[programName]);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+    //glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 1.0f, 10.0f);
+    glUniformMatrix4fv(projection_ID[programName], 1, GL_FALSE, glm::value_ptr(projection));
+
+    glm::mat4 view = glm::lookAt(
+            glm::vec3(4.0f, 5.0f, 3.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+    );
+    glUniformMatrix4fv(view_ID[programName], 1, GL_FALSE, glm::value_ptr(view));
+
+    glm::mat4 model_matrix = glm::mat4(1.0f);
+    model_matrix = glm::translate(model_matrix, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
+    model_matrix = glm::scale(model_matrix, glm::vec3(5.2f, 5.2f, 5.2f));	// it's a bit too big for our scene, so scale it down
+    glUniformMatrix4fv(model_ID[programName], 1, GL_FALSE, glm::value_ptr(model_matrix));
+    obj->Draw(ID);
 }
 
 void Renderer::getImage(Mat &img){

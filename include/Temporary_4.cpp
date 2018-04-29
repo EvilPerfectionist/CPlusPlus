@@ -78,10 +78,9 @@ Model::Model(const char* rootDirectory, const char* modelFile, bool withPoseEsti
             meshes.push_back(mesh);
         }
         else if(strcmp(fullFilePath.extension().c_str(), ".obj") == 0) {
-            Mesh *mesh = new Mesh;
-            mesh->name = fullFilePath.stem().string();
-            mesh->LoadMesh(fullFilePath.c_str());
-            meshes.push_back(mesh);
+            Model_OBJ *model_obj = new Model_OBJ;
+            model_obj->Model_OBJ_Init(fullFilePath);
+            model_objs.push_back(model_obj);
         }
         else{
             cout << "unknown model format, please provide either sdf or dae file" << endl;
@@ -106,6 +105,14 @@ void Model::render(Mat &img, bool clear, string program){
         renderer->renderColor(meshes[mesh], program);
     }
     return renderer->getImage(img);
+}
+
+void Model::Draw(bool clear, string program){
+    if(clear)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    for(uint obj=0; obj<model_objs.size(); obj++){
+        renderer->renderColor_OBJ(model_objs[obj], program);
+    }
 }
 
 void Model::updateViewMatrix(sf::Window &window){
