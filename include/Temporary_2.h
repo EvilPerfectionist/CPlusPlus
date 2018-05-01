@@ -27,6 +27,9 @@
 #define INVALID_OGL_VALUE 0xffffffff
 #define SAFE_DELETE(p) if (p) { delete p; p = NULL; }
 
+#define WIDTH 640
+#define HEIGHT 480
+
 using namespace Eigen;
 using namespace std;
 

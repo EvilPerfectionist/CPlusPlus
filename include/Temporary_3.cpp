@@ -166,6 +166,26 @@ GLint Renderer::createRenderProgram(GLuint &vertex_shader, GLuint &fragment_shad
     return Result;
 }
 
+void Renderer::renderColor(Mesh *mesh, VectorXd &pose, string program) {
+    Matrix3f rot = Matrix3f::Identity();
+    Vector3f p(pose(3), pose(4), pose(5));
+    float angle = p.norm();
+    if (abs(angle) > 0.0000001) {
+        p.normalize();
+        Matrix3f skew;
+        skew << 0, -p(2), p(1),
+                p(2), 0, -p(0),
+                -p(1), p(0), 0;
+        rot = rot + sin(angle) * skew;
+        rot = rot + (1.0 - cos(angle)) * skew * skew;
+    }
+
+    ViewMatrix.topLeftCorner(3,3) = rot;
+    ViewMatrix.topRightCorner(3,1) << pose(0), pose(1), pose(2);
+
+    renderColor(mesh, program);
+}
+
 void Renderer::renderColor(Mesh *mesh, string programName) {
     Eigen::Matrix4f MVP = ProjectionMatrix * ViewMatrix * mesh->ModelMatrix;
 

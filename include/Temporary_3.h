@@ -32,13 +32,18 @@
 
 #include <Temporary_7.h>
 
+// pcl
+#include <pcl/common/common_headers.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/parse.h>
+#include <pcl/point_types.h>
+
 // Converts degrees to radians.
 #define degreesToRadians(angleDegrees) (angleDegrees * (float)M_PI / 180.0f)
 // Converts radians to degrees.
 #define radiansToDegrees(angleRadians) (angleRadians * 180.0f / (float)M_PI)
-
-#define WIDTH 640
-#define HEIGHT 480
 
 using namespace std;
 using namespace Eigen;
@@ -49,6 +54,8 @@ public:
     Renderer(const char *rootDirectory);
 
     ~Renderer();
+
+    void renderColor(Mesh *mesh, VectorXd &pose, string program = "color");
 
     void renderColor(Mesh *mesh, string program = "color");
 

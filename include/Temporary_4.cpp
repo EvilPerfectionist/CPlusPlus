@@ -88,6 +88,12 @@ Model::Model(const char* rootDirectory, const char* modelFile, bool withPoseEsti
     }
     else {
         std::cout << "could not find model file: " << endl;
+
+    }
+
+    if(withPoseEstimation) {
+        cout << "initializing poseestimator" << endl;
+        poseestimator = new Poseestimator(meshes, renderer->K);
     }
 }
 
@@ -96,6 +102,15 @@ Model::~Model(){
         delete meshes[mesh];
     delete renderer;
     delete filesystem;
+}
+
+void Model::render(VectorXd &pose, Mat &img, bool clear, string program){
+    if(clear)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    for(uint mesh=0; mesh<meshes.size(); mesh++){
+        renderer->renderColor(meshes[mesh], pose, program);
+    }
+    return renderer->getImage(img);
 }
 
 void Model::render(Mat &img, bool clear, string program){
@@ -172,4 +187,80 @@ void Model::updateViewMatrix(sf::Window &window){
     RT.topRightCorner(3,1) = dcameraPos;
 
     renderer->ViewMatrix = RT;
+}
+
+void Model::visualize(int type) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr mesh_cloud_ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::Normal>::Ptr mesh_cloud_normals_ptr(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointCloud<pcl::Normal>::Ptr cloud_vectors_ptr(new pcl::PointCloud<pcl::Normal>);
+
+    for(uint m=0; m<meshes.size(); m++){
+        for(uint i=0;i<meshes[m]->m_Entries.size();i++) {
+            for (uint j = 0; j < meshes[m]->m_Entries[i].NumVertices; j++) {
+                pcl::PointXYZRGB point(100, 100, 100);
+                point.x = poseestimator->modelData[m]->vertices_out[i][j].x;
+                point.y = poseestimator->modelData[m]->vertices_out[i][j].y;
+                point.z = poseestimator->modelData[m]->vertices_out[i][j].z;
+                mesh_cloud_ptr->points.push_back(point);
+                pcl::Normal n(poseestimator->modelData[m]->normals_out[i][j].x,
+                              poseestimator->modelData[m]->normals_out[i][j].y,
+                              poseestimator->modelData[m]->normals_out[i][j].z);
+                mesh_cloud_normals_ptr->push_back(n);
+                if(poseestimator->modelData[m]->tangents_out[i][j].x!=0 &&
+                   poseestimator->modelData[m]->tangents_out[i][j].y!=0 &&
+                   poseestimator->modelData[m]->tangents_out[i][j].z!=0) {
+                    pcl::PointXYZRGB point(0, 255, 0);
+                    point.x = poseestimator->modelData[m]->vertices_out[i][j].x;
+                    point.y = poseestimator->modelData[m]->vertices_out[i][j].y;
+                    point.z = poseestimator->modelData[m]->vertices_out[i][j].z;
+                    point_cloud_ptr->points.push_back(point);
+                    switch (type) {
+                        case NORMALS: {
+                            pcl::Normal n(poseestimator->modelData[m]->normals_out[i][j].x,
+                                          poseestimator->modelData[m]->normals_out[i][j].y,
+                                          poseestimator->modelData[m]->normals_out[i][j].z);
+                            cloud_vectors_ptr->push_back(n);
+                            break;
+                        }
+                        case TANGENTS: {
+                            pcl::Normal n(poseestimator->modelData[m]->tangents_out[i][j].x,
+                                          poseestimator->modelData[m]->tangents_out[i][j].y,
+                                          poseestimator->modelData[m]->tangents_out[i][j].z);
+                            cloud_vectors_ptr->push_back(n);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    mesh_cloud_ptr->width = (int) mesh_cloud_ptr->points.size();
+    mesh_cloud_ptr->height = 1;
+    mesh_cloud_normals_ptr->width = (int) mesh_cloud_normals_ptr->points.size();
+    mesh_cloud_normals_ptr->height = 1;
+    point_cloud_ptr->width = (int) point_cloud_ptr->points.size();
+    point_cloud_ptr->height = 1;
+    cloud_vectors_ptr->width = (int) cloud_vectors_ptr->points.size();
+    cloud_vectors_ptr->height = 1;
+
+    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer("3D viewer"));
+    viewer->setBackgroundColor(0, 0, 0);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgbMesh(mesh_cloud_ptr);
+    viewer->addPointCloud<pcl::PointXYZRGB>(mesh_cloud_ptr, rgbMesh, "mesh cloud");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "mesh cloud");
+    viewer->addPointCloudNormals<pcl::PointXYZRGB, pcl::Normal>(point_cloud_ptr, mesh_cloud_normals_ptr, 1, 0.01, "normals");
+
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(point_cloud_ptr);
+    viewer->addPointCloud<pcl::PointXYZRGB>(point_cloud_ptr, rgb, "sample cloud");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "sample cloud");
+    viewer->addPointCloudNormals<pcl::PointXYZRGB, pcl::Normal>(point_cloud_ptr, cloud_vectors_ptr, 1, 0.05, "vectors");
+    viewer->initCameraParameters();
+
+    viewer->setCameraPosition(0,0,0,0,0,-1,0,1,0);
+
+    while (!viewer->wasStopped() ) {
+        viewer->spinOnce(100);
+        boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+    }
 }

@@ -2,12 +2,18 @@
 #define TEST_C_TEMPORARY_4_H
 
 #include <iostream>
+#include <fstream>
+#include <thread>
+#include <future>
 #include <Temporary_3.h>
 #include <filesystem.hpp>
 #include <sdf/sdf.hh>
 #include <string>
+#include <Temporary_9.h>
 
 using namespace std;
+
+enum{ NORMALS, TANGENTS};
 
 class Model{
 public:
@@ -23,7 +29,11 @@ public:
 
     void updateViewMatrix(sf::Window &window);
 
+    void visualize(int type = NORMALS);
+
     Renderer *renderer;
+
+    Poseestimator *poseestimator;
 
 private:
     vector<Model_OBJ*> model_objs;
