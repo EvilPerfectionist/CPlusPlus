@@ -9,14 +9,25 @@ int main()
     settings.stencilBits = 8;
 
     sf::Window window(sf::VideoMode(WIDTH, HEIGHT, 24), "Transform Feedback", sf::Style::Titlebar | sf::Style::Close, settings);
-
+    window.setPosition(sf::Vector2i(1280,0));
     // Initialize GLEW
     glewExperimental = GL_TRUE;
     glewInit();
 
-    Model model("/home/leon/Instrument_Pose_Estimation/Test_C", "Iron_Man_mark_6.dae");// Iron_Man_mark_6.dae  model_simplified.sdf
+    Model model("/home/leon/Instrument_Pose_Estimation/Test_C", "Instrument.dae");// Iron_Man_mark_6.dae  model_simplified.sdf
 
     Model room("/home/leon/Instrument_Pose_Estimation/Test_C","room.dae", false);
+
+    cv::namedWindow("camera image");
+    cv::moveWindow("camera image", 0,0);
+    cv::namedWindow("artificial image");
+    cv::moveWindow("artificial image", 640,0);
+    cv::namedWindow("R");
+    cv::moveWindow("R", 0,520);
+    cv::namedWindow("Rc");
+    cv::moveWindow("Rc", 640,520);
+    cv::namedWindow("result");
+    cv::moveWindow("result", 1280,520);
 
     // run the main loop
     bool running = true;
@@ -32,18 +43,15 @@ int main()
         sf::Event event;
         while (window.pollEvent(event))
         {
-            switch (event.type)
+            if (event.type == sf::Event::Closed)
             {
-                case sf::Event::Closed:
-                    running = false;
-                    break;
-                case sf::Event::KeyPressed:
-                    if (event.key.code == sf::Keyboard::Escape)
-                        running = false;
-                    break;
-                case sf::Event::Resized:
-                    glViewport(0, 0, event.size.width, event.size.height);
-                    break;
+                // end the program
+                running = false;
+            }
+            else if (event.type == sf::Event::Resized)
+            {
+                // adjust the viewport when the window is resized
+                glViewport(0, 0, event.size.width, event.size.height);
             }
         }
 
@@ -66,7 +74,7 @@ int main()
 
         uint iter = 0;
         model.poseestimator->cost.clear();
-        while(iter<200 && !sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)){
+        while(iter<100 && !sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)){
             Mat img_artificial;
             model.render(pose_estimator, img_artificial, true, "color_simple");
             imshow("artificial image", img_artificial);
