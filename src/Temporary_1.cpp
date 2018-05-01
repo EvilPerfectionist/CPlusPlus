@@ -25,6 +25,7 @@ int main()
 
     char k;
 
+
     while (running && k!=32)
     {
         // handle events
@@ -60,7 +61,44 @@ int main()
             //model.Draw(true,"Model_Loading");
             window.display();
         }
-        
 
+        float lambda_trans = 0.00000001, lambda_rot = 0.0000001;
+
+        uint iter = 0;
+        model.poseestimator->cost.clear();
+        while(iter<200 && !sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)){
+            Mat img_artificial;
+            model.render(pose_estimator, img_artificial, true, "color_simple");
+            imshow("artificial image", img_artificial);
+            cv::waitKey(1);
+
+            model.poseestimator->iterateOnce(img_camera, img_artificial, pose_estimator, grad);
+            cout << "gradient:\n" << grad << endl;
+            pose_estimator(0) += lambda_trans*grad(0);
+            pose_estimator(1) += lambda_trans*grad(1);
+            pose_estimator(2) += lambda_trans*grad(2);
+            pose_estimator(3) += lambda_rot*grad(3);
+            pose_estimator(4) += lambda_rot*grad(4);
+            pose_estimator(5) += lambda_rot*grad(5);
+
+            lambda_trans*=0.97f;
+            lambda_rot*=0.97f;
+
+            iter++;
+
+#ifdef VISUALIZE
+            if((iter+1)%10==0) {
+                model.visualize(NORMALS);
+                model.visualize(TANGENTS);
+            }
+#endif
+        }
+
+        // end the current frame (internally swaps the front and back buffers)
+        window.display();
     }
+
+    window.close();
+
+    return 0;
 }
