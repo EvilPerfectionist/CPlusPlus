@@ -1,6 +1,6 @@
 #ifndef TEMPORARY_2_H
 #define TEMPORARY_2_H
-//#pragma once
+#pragma once
 // glew
 #include <GL/glew.h>
 #include <iostream>

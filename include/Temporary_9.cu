@@ -306,7 +306,7 @@ double Poseestimator::iterateOnce(const Mat &img_camera, Mat &img_artificial, Ve
     findContours(img_artificial_gray, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_TC89_L1,
                  cv::Point(0, 0));
 
-    double min_contour_area = 10;
+    double min_contour_area = 40;
     for (auto it = contours.begin(); it != contours.end();) {
         if (contourArea(*it) < min_contour_area)
             it = contours.erase(it);
@@ -348,8 +348,8 @@ double Poseestimator::iterateOnce(const Mat &img_camera, Mat &img_artificial, Ve
         R = R - mu_in;
         Rc = Rc - mu_out;
 
-        //imshow("R", R/255.0f);
-        //imshow("Rc", Rc/255.0f);
+        imshow("R", R/255.0f);
+        imshow("Rc", Rc/255.0f);
         cv::waitKey(1);
 
         // copy only the respective areas

@@ -1,6 +1,6 @@
 #ifndef TEST_C_TEMPORARY_4_H
 #define TEST_C_TEMPORARY_4_H
-
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <thread>

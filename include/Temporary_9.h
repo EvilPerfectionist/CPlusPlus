@@ -1,6 +1,6 @@
 #ifndef TEST_C_TEMPORARY_9_H
 #define TEST_C_TEMPORARY_9_H
-
+#pragma once
 // Include GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -32,6 +32,10 @@ using cv::Mat;
 void cuda_check(string file, int line);
 
 #define CUDA_CHECK cuda_check(__FILE__,__LINE__)
+
+__global__ void costFcn(Vertex *vertices, float3 *vertices_out, float3 *normals_out, float3 *tangents_out,
+                        uchar *border, uchar *image, float mu_in, float mu_out, float sigma_in, float sigma_out,
+                        uchar *img_out, int numberOfVertices, float3 *gradTrans, float3 *gradRot);
 
 struct ModelData{
     Matrix4f *ModelMatrix;
