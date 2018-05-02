@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <SOIL/SOIL.h>
 #include <SFML/Window.hpp>
+#include <chrono>
 
 // Shader sources
 const GLchar* vertexSource = R"glsl(
@@ -27,12 +28,25 @@ const GLchar* fragmentSource = R"glsl(
     in vec3 Color;
     in vec2 Texcoord;
     out vec4 outColor;
-    uniform sampler2D tex;
+    uniform sampler2D texKitten;
+    uniform sampler2D texPuppy;
+    uniform float time;
     void main()
     {
         //outColor = vec4(triangleColor, 1.0);
         //outColor = vec4(Color, 1.0);
-        outColor = texture(tex, Texcoord) * vec4(Color, 1.0);
+        vec4 colKitten = texture(texKitten, Texcoord);
+        vec4 colPuppy = texture(texPuppy, Texcoord);
+        float factor = (sin(time * 3.0) + 1.0) / 2.0;
+        //outColor = mix(colKitten, colPuppy, 0.5);
+        //outColor = mix(colKitten, colPuppy, factor);
+        //outColor = texture(tex, Texcoord) * vec4(Color, 1.0);
+        if (Texcoord.y < 0.5)
+            outColor = texture(texKitten, Texcoord);
+        else
+            outColor = texture(texKitten,
+                vec2(Texcoord.x + sin(Texcoord.y * 60.0 + time * 2.0) / 30.0, 1.0 - Texcoord.y)
+            ) * vec4(0.7, 0.7, 1.0, 1.0);
     }
 )glsl";
 
@@ -64,9 +78,9 @@ int main()
     GLfloat vertices[] = {
             //  Position      Color        Texcoords
             -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
-            0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 2.0f, 0.0f, // Top-right
-            0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 2.0f, 2.0f, // Bottom-right
-            -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 2.0f  // Bottom-left
+            0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
+            0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
+            -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -85,9 +99,11 @@ int main()
                  sizeof(elements), elements, GL_STATIC_DRAW);
 
     // Load texture
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
+    GLuint textures[2];
+    glGenTextures(2, textures);
+
+    int width, height;
+    unsigned char* image;
 
     // Black/white checkerboard
     //float pixels[] = {
@@ -96,14 +112,16 @@ int main()
     //};
     //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_FLOAT, pixels);
 
-    int width, height;
-    unsigned char* image = SOIL_load_image("/home/leon/Instrument_Pose_Estimation/Test_C/sample.png", &width, &height, 0, SOIL_LOAD_RGB);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
+    image = SOIL_load_image("/home/leon/Instrument_Pose_Estimation/Test_C/images/sample.png", &width, &height, 0, SOIL_LOAD_RGB);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, image);
     SOIL_free_image_data(image);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     //float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -112,6 +130,18 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+    image = SOIL_load_image("/home/leon/Instrument_Pose_Estimation/Test_C/images/sample2.png", &width, &height, 0, SOIL_LOAD_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Create and compile the vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -148,7 +178,11 @@ int main()
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE,
                           7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 
-    //auto t_start = std::chrono::high_resolution_clock::now();
+    glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);
+    glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
+
+    auto t_start = std::chrono::high_resolution_clock::now();
+    GLint uniTime = glGetUniformLocation(shaderProgram, "time");
 
     bool running = true;
     while (running)
@@ -172,8 +206,9 @@ int main()
         //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         //glClear(GL_COLOR_BUFFER_BIT);
 
-        //auto t_now = std::chrono::high_resolution_clock::now();
-        //float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
+        auto t_now = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
+        glUniform1f(uniTime, time);
         //glUniform3f(uniColor, (sin(time * 4.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
 
         //glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -187,7 +222,7 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteBuffers(1, &ebo);
     glDeleteBuffers(1, &vbo);
-    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, textures);
     glDeleteVertexArrays(1, &vao);
 
     window.close();

@@ -20,7 +20,7 @@ main (int argc, char** argv)
         cloud.points[i].z = 1024 * rand () / (RAND_MAX + 1.0f);
     }
 
-    //pcl::io::savePCDFileASCII ("test_pcd.pcd", cloud);
+    pcl::io::savePCDFileASCII ("/home/leon/Instrument_Pose_Estimation/Test_C/test_pcd.pcd", cloud);
     std::cerr << "Saved " << cloud.points.size () << " data points to test_pcd.pcd." << std::endl;
 
     for (size_t i = 0; i < cloud.points.size (); ++i)

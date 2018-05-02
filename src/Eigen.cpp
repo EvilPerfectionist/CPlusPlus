@@ -22,6 +22,11 @@ int main () {
     C = Matrix3f::Identity();
     cout << C << "\n";
 
+    Matrix4f D = Matrix4f::Ones();
+    //D.topRightCorner(4, 1) << 0, 0, 0, -1;
+    D.bottomRightCorner(1, 1) << 0;
+    cout << D << "\n";
+
     Matrix4f M1 = Matrix4f::Random();
     Matrix4f M2 = Matrix4f::Constant(2.2);
 

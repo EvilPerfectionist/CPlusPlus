@@ -14,7 +14,7 @@ int main(int argc,char **argv)
     Image image;
     try {
         // Read a file into image object
-        image.read( "/home/leon/Instrument_Pose_Estimation/Test_C/images/sample.png" );
+        image.read( "/home/leon/Instrument_Pose_Estimation/Test_C/images/sample2.png" );
 
         // Crop the image to specified size (width, height, xOffset, yOffset)
         image.crop( Geometry(100,100, 100, 100) );

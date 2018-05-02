@@ -8,7 +8,8 @@ int main(){
 
     // Create a VideoCapture object and open the input file
     // If the input is the web camera, pass 0 instead of the video file name
-    VideoCapture cap(1);
+    VideoCapture cap;
+    cap.open(0);
 
     // Check if camera opened successfully
     if(!cap.isOpened()){
