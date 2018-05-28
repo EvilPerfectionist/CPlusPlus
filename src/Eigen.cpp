@@ -1,4 +1,5 @@
 # include <Eigen/Core>
+#include <Eigen/Dense>
 # include <iostream>
 using namespace std ;
 using namespace Eigen ;
@@ -55,5 +56,15 @@ int main () {
     Vector4f v5 = Vector4f(1.0f, 2.0f, 3.0f, 4.0f);
     cout << Matrix4f::Random() * v5 << endl ;
 
+    Matrix4f ModelMatrix = Matrix4f::Identity();
+    VectorXf pose(6);
+    pose << 0,0,0,M_PI,0,0;
+    Matrix3f rot;
+    rot =  AngleAxisf(pose(3), Vector3f::UnitX()) *
+           AngleAxisf(pose(4), Vector3f::UnitY()) *
+           AngleAxisf(pose(5), Vector3f::UnitZ());
+    ModelMatrix.topLeftCorner(3,3) = rot;
+    ModelMatrix.topRightCorner(3,1) << pose(0), pose(1), pose(2);
+    cout << ModelMatrix << endl;
     return 0;
 }

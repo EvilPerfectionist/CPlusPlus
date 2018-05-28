@@ -148,6 +148,8 @@ private:
         }
         // process materials
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        cout << "Material Numbers :" << scene->mNumMaterials << endl;
+        cout << "MaterialIndex Numbers :" << mesh->mMaterialIndex << endl;
         // we assume a convention for sampler names in the shaders. Each diffuse texture should be named
         // as 'texture_diffuseN' where N is a sequential number ranging from 1 to MAX_SAMPLER_NUMBER.
         // Same applies to other texture as the following list summarizes:
@@ -156,15 +158,19 @@ private:
         // normal: texture_normalN
 
         // 1. diffuse maps
+        cout << "Numbers of aiTextureType_DIFFUSE :" << material->GetTextureCount(aiTextureType_DIFFUSE) << endl;
         vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
         // 2. specular maps
+        cout << "Numbers of aiTextureType_SPECULAR :" << material->GetTextureCount(aiTextureType_SPECULAR) << endl;
         vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         // 3. normal maps
+        cout << "Numbers of aiTextureType_HEIGHT :" << material->GetTextureCount(aiTextureType_HEIGHT) << endl;
         std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
         // 4. height maps
+        cout << "Numbers of aiTextureType_AMBIENT :" << material->GetTextureCount(aiTextureType_AMBIENT) << endl;
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
@@ -198,6 +204,7 @@ private:
                 texture.id = TextureFromFile(str.C_Str(), this->directory);
                 texture.type = typeName;
                 texture.path = str.C_Str();
+                cout << "MaterialIndex Numbers :" << texture.path << endl;
                 textures.push_back(texture);
                 textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
             }
